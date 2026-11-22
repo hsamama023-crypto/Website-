@@ -3,8 +3,38 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title
-    gap: 8px;
+  <title>Photo Text & Logo Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body {
+      margin: 0;
+      padding: 18px;
+      background: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    h2 { margin: 0; font-size: 1.35rem; }
+    .panel {
+      background: #1e293b;
+      padding: 14px;
+      border-radius: 12px;
+      max-width: 960px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border: 1px solid #334155;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
       align-items: center;
     }
     .group-label {
@@ -138,6 +168,208 @@
       <label class="check-label">X <input type="range" id="shadowXInput" min="-30" max="30" value="3" style="width:75px;" /></label>
       <label class="check-label">Y <input type="range" id="shadowYInput" min="-30" max="30" value="4" style="width:75px;" /></label>
     </div>
+    <div class="row">
+      <span class="group-label">Logo (Left Side):</span>
+      <label class="check-label">Size <input type="range" id="logoSizeInput" min="30" max="400" value="110" /></label>
+      <span id="logoSizeVal" style="font-size:12px; color:#cbd5e1;">110px</span>
+      <label class="check-label">Opacity <input type="range" id="logoOpacityInput" min="10" max="100" value="100" style="width:85px;" /></label>
+      <button id="resetLogoPosBtn">Reset Left Position</button>
+      <button id="removeLogoBtn" class="danger">Remove Logo</button>
+    </div>
+
+    <div class="row">
+      <span class="group-label">Purana Text Brush:</span>
+      <label class="check-label">Size <input type="range" id="brushSizeInput" min="6" max="100" value="26" /></label>
+      <span id="brushSizeVal" style="font-size:12px; color:#cbd5e1;">26px</span>
+      <label class="check-label">Patch Color <input type="color" id="patchColorInput" value="#ffffff" /></label>
+      <button id="eyedropBtn">Color Picker (Click Photo)</button>
+      <button id="clearPatchBtn" class="danger">Clear Patches</button>
+    </div>
+  </div>
+
+  <div class="canvas-wrap">
+    <canvas id="editorCanvas" width="840" height="520"></canvas>
+  </div>
+
+  <div class="hint">
+    <strong>Aasaan Tareeqa:</strong> Jo text photo par likha hai usay click karein (ya dropdown se chunein) aur box mein likh kar usay <strong>foran replace</strong> karein. Naya text chahiye to <strong>+ New Text</strong> dabayein.
+  </div>
+
+  <script>
+    const canvas = document.getElementById("editorCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const patchCanvas = document.createElement("canvas");
+    patchCanvas.width = canvas.width;
+    patchCanvas.height = canvas.height;
+    const pCtx = patchCanvas.getContext("2d");
+
+    const imgInput = document.getElementById("imgInput");
+    const logoInput = document.getElementById("logoInput");
+    const logoSizeInput = document.getElementById("logoSizeInput");
+    const logoSizeVal = document.getElementById("logoSizeVal");
+    const logoOpacityInput = document.getElementById("logoOpacityInput");
+    const resetLogoPosBtn = document.getElementById("resetLogoPosBtn");
+    const removeLogoBtn = document.getElementById("removeLogoBtn");
+
+    const modeMoveBtn = document.getElementById("modeMoveBtn");
+    const modePatchColorBtn = document.getElementById("modePatchColorBtn");
+    const modePatchBlurBtn = document.getElementById("modePatchBlurBtn");
+    const modeEraserBtn = document.getElementById("modeEraserBtn");
+    const clearPatchBtn = document.getElementById("clearPatchBtn");
+    const eyedropBtn = document.getElementById("eyedropBtn");
+
+    const brushSizeInput = document.getElementById("brushSizeInput");
+    const brushSizeVal = document.getElementById("brushSizeVal");
+    const patchColorInput = document.getElementById("patchColorInput");
+
+    const textSelect = document.getElementById("textSelect");
+    const textInput = document.getElementById("textInput");
+    const newTextBtn = document.getElementById("newTextBtn");
+    const sizeInput = document.getElementById("sizeInput");
+    const colorInput = document.getElementById("colorInput");
+    const fontInput = document.getElementById("fontInput");
+    const outlineCheck = document.getElementById("outlineCheck");
+    const deleteTextBtn = document.getElementById("deleteTextBtn");
+
+    const shadowCheck = document.getElementById("shadowCheck");
+    const shadowColorInput = document.getElementById("shadowColorInput");
+    const shadowBlurInput = document.getElementById("shadowBlurInput");
+    const shadowXInput = document.getElementById("shadowXInput");
+    const shadowYInput = document.getElementById("shadowYInput");
+
+    const downloadBtn = document.getElementById("downloadBtn");
+
+    let currentMode = "move";
+    let pickingColor = false;
+    let bgImage = null;
+
+    let logoState = {
+      img: null,
+      x: 20,
+      y: 20,
+      width: 110,
+      height: 110,
+      opacity: 1,
+      selected: false
+    };
+
+    let texts = [];
+    let selectedTextIndex = -1;
+    let dragTarget = null;
+    let isPointerDown = false;
+    let offsetX = 0;
+    let offsetY = 0;
+    function syncTextDropdown() {
+      textSelect.innerHTML = '<option value="-1">-- Koi Text Select Nahi --</option>';
+      texts.forEach((t, idx) => {
+        const opt = document.createElement("option");
+        opt.value = String(idx);
+        opt.textContent = `${idx + 1}. ${t.text || "(Khali)"}`;
+        textSelect.appendChild(opt);
+      });
+      textSelect.value = String(selectedTextIndex);
+    }
+
+    function loadSelectedTextIntoInputs() {
+      if (selectedTextIndex >= 0 && texts[selectedTextIndex]) {
+        const t = texts[selectedTextIndex];
+        textInput.value = t.text;
+        sizeInput.value = t.fontSize;
+        colorInput.value = t.color;
+        fontInput.value = t.fontFamily;
+        outlineCheck.checked = Boolean(t.outline);
+        shadowCheck.checked = Boolean(t.shadow);
+        shadowColorInput.value = t.shadowColor || "#000000";
+        shadowBlurInput.value = t.shadowBlur ?? 10;
+        shadowXInput.value = t.shadowX ?? 3;
+        shadowYInput.value = t.shadowY ?? 4;
+      } else {
+        textInput.value = "";
+      }
+      syncTextDropdown();
+    }
+
+    function selectTextAt(index) {
+      selectedTextIndex = index;
+      if (index >= 0) {
+        logoState.selected = false;
+      }
+      loadSelectedTextIntoInputs();
+      render();
+    }
+
+    newTextBtn.addEventListener("click", () => {
+      setMode("move");
+      logoState.selected = false;
+      const newLayer = {
+        text: "Naya Text",
+        x: 50,
+        y: Math.max(50, Math.round(canvas.height / 2)),
+        fontSize: parseInt(sizeInput.value, 10) || 36,
+        color: colorInput.value,
+        fontFamily: fontInput.value,
+        outline: outlineCheck.checked,
+        shadow: shadowCheck.checked,
+        shadowColor: shadowColorInput.value,
+        shadowBlur: parseInt(shadowBlurInput.value, 10) || 0,
+        shadowX: parseInt(shadowXInput.value, 10) || 0,
+        shadowY: parseInt(shadowYInput.value, 10) || 0
+      };
+      texts.push(newLayer);
+      selectedTextIndex = texts.length - 1;
+      loadSelectedTextIntoInputs();
+      textInput.focus();
+      textInput.select();
+      render();
+    });
+
+    textInput.addEventListener("input", () => {
+      if (selectedTextIndex < 0 || !texts[selectedTextIndex]) {
+        const newLayer = {
+          text: textInput.value,
+          x: 50,
+          y: Math.max(50, Math.round(canvas.height / 2)),
+          fontSize: parseInt(sizeInput.value, 10) || 36,
+          color: colorInput.value,
+          fontFamily: fontInput.value,
+          outline: outlineCheck.checked,
+          shadow: shadowCheck.checked,
+          shadowColor: shadowColorInput.value,
+          shadowBlur: parseInt(shadowBlurInput.value, 10) || 0,
+          shadowX: parseInt(shadowXInput.value, 10) || 0,
+          shadowY: parseInt(shadowYInput.value, 10) || 0
+        };
+        texts.push(newLayer);
+        selectedTextIndex = texts.length - 1;
+        syncTextDropdown();
+      } else {
+        texts[selectedTextIndex].text = textInput.value;
+        syncTextDropdown();
+      }
+      render();
+    });
+
+    function applyStyleChanges() {
+      if (selectedTextIndex < 0 || !texts[selectedTextIndex]) return;
+      const t = texts[selectedTextIndex];
+      t.fontSize = parseInt(sizeInput.value, 10) || 36;
+      t.color = colorInput.value;
+      t.fontFamily = fontInput.value;
+      t.outline = outlineCheck.checked;
+      t.shadow = shadowCheck.checked;
+      t.shadowColor = shadowColorInput.value;
+      t.shadowBlur = parseInt(shadowBlurInput.value, 10) || 0;
+      t.shadowX = parseInt(shadowXInput.value, 10) || 0;
+      t.shadowY = parseInt(shadowYInput.value, 10) || 0;
+      render();
+    }
+
+    [sizeInput, colorInput, fontInput, outlineCheck, shadowCheck, shadowColorInput, shadowBlurInput, shadowXInput, shadowYInput].forEach(el => {
+      el.addEventListener("input", applyStyleChanges);
+      el.addEventListener("change", applyStyleChanges);
+    });
+
     textSelect.addEventListener("change", () => {
       const idx = parseInt(textSelect.value, 10);
       selectTextAt(Number.isNaN(idx) ? -1 : idx);
@@ -508,4 +740,4 @@
     drawPlaceholder();
   </script>
 </body>
-        </html>
+</html>
