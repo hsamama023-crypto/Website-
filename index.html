@@ -1,1 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meri Website</title>
+<style>
+  body{
+    background:#f5f5f5;
+    font-family:Arial;
+    padding:15px;
+  }
+  .box{
+    background:white;
+    max-width:400px;
+    margin:auto;
+    padding:20px;
+    border-radius:10px;
+  }
+  h1{
+    text-align:center;
+    font-size:22px;
+  }
+  img{
+    width:100%;
+    border-radius:10px;
+    display:none;
+  }
+  input{
+    width:100%;
+    padding:10px;
+    margin-top:10px;
+    border:1px solid #ccc;
+    border-radius:8px;
+    box-sizing:border-box;
+  }
+  button{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    background:black;
+    color:white;
+    border:none;
+    border-radius:8px;
+  }
+  p{
+    text-align:center;
+    color:#555;
+  }
+</style>
+</head>
+<body>
 
+<div class="box">
+  <h1>Meri Website</h1>
+  <p>Yahan apni details likho</p>
+
+  <input type="text" placeholder="Apna Naam Likho">
+  <input type="text" placeholder="Apni ID Likho">
+  <input type="text" placeholder="Apna Number Likho">
+  <input type="text" placeholder="Apna Shehar Likho">
+
+  <br><br>
+  <button onclick="document.getElementById('pic').click()">Pic Select Karo</button>
+  <input type="file" id="pic" accept="image/*" hidden>
+  <br><br>
+  <img id="showPic">
+
+  <button onclick="alert('Save ho gaya!')">Save Karo</button>
+</div>
+
+<script>
+document.getElementById('pic').addEventListener('change', function(){
+  let reader = new FileReader();
+  reader.onload = function(e){
+    let img = document.getElementById('showPic');
+    img.src = e.target.result;
+    img.style.display = 'block';
+  }
+  reader.readAsDataURL(this.files[0]);
+});
+</script>
+
+</body>
+</html>
