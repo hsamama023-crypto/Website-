@@ -3,38 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Photo Text Editor - Eraser & Shadow</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet" />
-  <style>
-    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-    body {
-      margin: 0;
-      padding: 18px;
-      background: #0f172a;
-      color: #f8fafc;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 14px;
-    }
-    h2 { margin: 0; font-size: 1.35rem; }
-    .panel {
-      background: #1e293b;
-      padding: 14px;
-      border-radius: 12px;
-      max-width: 960px;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      border: 1px solid #334155;
-    }
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
+  <title
+    gap: 8px;
       align-items: center;
     }
     .group-label {
@@ -73,6 +43,10 @@
       transition: background 0.15s ease;
     }
     button:hover, label.btn:hover { background: #1d4ed8; }
+    button.btn-new { background: #0d9488; }
+    button.btn-new:hover { background: #0f766e; }
+    label.btn-logo { background: #7c3aed; }
+    label.btn-logo:hover { background: #6d28d9; }
     button.active-tool {
       background: #0284c7;
       outline: 2px solid #7dd3fc;
@@ -117,38 +91,33 @@
   </style>
 </head>
 <body>
-  <h2>Photo Text Editor — Purana Text Mitane &amp; Saya Tool</h2>
+  <h2>Photo Text &amp; Logo Editor</h2>
 
   <div class="panel">
-    <!-- Top Row: Upload & Mode -->
     <div class="row">
-      <label class="btn" for="imgInput">Photo Upload</label>
+      <label class="btn" for="imgInput">1. Photo Upload</label>
       <input type="file" id="imgInput" accept="image/*" />
 
+      <label class="btn btn-logo" for="logoInput">2. Logo Upload (Left)</label>
+      <input type="file" id="logoInput" accept="image/*" />
+
       <span class="group-label">Mode:</span>
-      <button id="modeTextBtn" class="active-tool">Text Move / Edit</button>
+      <button id="modeMoveBtn" class="active-tool">Text / Logo Move</button>
       <button id="modePatchColorBtn">Purana Text Mitayein (Color)</button>
       <button id="modePatchBlurBtn">Purana Text Mitayein (Blur)</button>
       <button id="modeEraserBtn">Patch Eraser</button>
-      <button id="clearPatchBtn" class="danger">Clear Patches</button>
 
       <button id="downloadBtn" class="download" style="margin-left:auto;">Download PNG</button>
     </div>
 
-    <!-- Patch Brush Controls -->
-    <div class="row" id="patchControls">
-      <span class="group-label">Brush:</span>
-      <label class="check-label">Size <input type="range" id="brushSizeInput" min="6" max="100" value="26" /></label>
-      <span id="brushSizeVal" style="font-size:12px; color:#cbd5e1;">26px</span>
-      <label class="check-label">Patch Color <input type="color" id="patchColorInput" value="#ffffff" /></label>
-      <button id="eyedropBtn" title="Canvas par click kar ke background color pick karein">Color Picker (Click Photo)</button>
-    </div>
-
-    <!-- Text & Shadow Controls -->
     <div class="row">
-      <span class="group-label">Text:</span>
-      <input type="text" id="textInput" placeholder="Text ya Urdu likhein..." style="min-width: 190px;" />
-      <input type="number" id="sizeInput" value="36" min="12" max="220" style="width: 76px;" title="Font Size" />
+      <span class="group-label">Edit / Replace Text:</span>
+      <select id="textSelect" title="Likha hua text chunein">
+        <option value="-1">-- Koi Text Select Nahi --</option>
+      </select>
+      <input type="text" id="textInput" placeholder="Yahan likhein ya purana badlein..." style="min-width: 210px;" />
+      <button id="newTextBtn" class="btn-new">+ New Text</button>
+      <input type="number" id="sizeInput" value="36" min="12" max="220" style="width: 74px;" title="Font Size" />
       <input type="color" id="colorInput" value="#ffffff" title="Text Color" />
       <select id="fontInput">
         <option value="'Noto Nastaliq Urdu', serif">Urdu (Noto Nastaliq)</option>
@@ -158,11 +127,9 @@
         <option value="Arial, sans-serif">Arial</option>
       </select>
       <label class="check-label"><input type="checkbox" id="outlineCheck" /> Outline</label>
-      <button id="addTextBtn">Add / Update</button>
       <button id="deleteTextBtn" class="danger">Delete Text</button>
     </div>
 
-    <!-- Shadow Controls -->
     <div class="row">
       <span class="group-label">Saya (Shadow):</span>
       <label class="check-label"><input type="checkbox" id="shadowCheck" checked /> Saya On</label>
@@ -171,84 +138,67 @@
       <label class="check-label">X <input type="range" id="shadowXInput" min="-30" max="30" value="3" style="width:75px;" /></label>
       <label class="check-label">Y <input type="range" id="shadowYInput" min="-30" max="30" value="4" style="width:75px;" /></label>
     </div>
-  </div>
+    textSelect.addEventListener("change", () => {
+      const idx = parseInt(textSelect.value, 10);
+      selectTextAt(Number.isNaN(idx) ? -1 : idx);
+    });
 
-  <div class="canvas-wrap">
-    <canvas id="editorCanvas" width="840" height="520"></canvas>
-  </div>
-
-  <div class="hint">
-    <strong>Tip:</strong> Purana text hatane ke liye <strong>Purana Text Mitayein (Color)</strong> chunein, background ka rang lene ke liye <strong>Color Picker</strong> dabayein aur photo ke saaf hisse par click karein, phir purane text par brush pherein. Naye text ko drag kar ke kisi bhi jagah rakhein.
-  </div>
-
-  <script>
-    const canvas = document.getElementById("editorCanvas");
-    const ctx = canvas.getContext("2d");
-
-    // Offscreen layer for covering/erasing old text on the photo
-    const patchCanvas = document.createElement("canvas");
-    patchCanvas.width = canvas.width;
-    patchCanvas.height = canvas.height;
-    const pCtx = patchCanvas.getContext("2d");
-
-    // UI elements
-    const imgInput = document.getElementById("imgInput");
-    const modeTextBtn = document.getElementById("modeTextBtn");
-    const modePatchColorBtn = document.getElementById("modePatchColorBtn");
-    const modePatchBlurBtn = document.getElementById("modePatchBlurBtn");
-    const modeEraserBtn = document.getElementById("modeEraserBtn");
-    const clearPatchBtn = document.getElementById("clearPatchBtn");
-    const eyedropBtn = document.getElementById("eyedropBtn");
-
-    const brushSizeInput = document.getElementById("brushSizeInput");
-    const brushSizeVal = document.getElementById("brushSizeVal");
-    const patchColorInput = document.getElementById("patchColorInput");
-
-    const textInput = document.getElementById("textInput");
-    const sizeInput = document.getElementById("sizeInput");
-    const colorInput = document.getElementById("colorInput");
-    const fontInput = document.getElementById("fontInput");
-    const outlineCheck = document.getElementById("outlineCheck");
-    const addTextBtn = document.getElementById("addTextBtn");
-    const deleteTextBtn = document.getElementById("deleteTextBtn");
-
-    const shadowCheck = document.getElementById("shadowCheck");
-    const shadowColorInput = document.getElementById("shadowColorInput");
-    const shadowBlurInput = document.getElementById("shadowBlurInput");
-    const shadowXInput = document.getElementById("shadowXInput");
-    const shadowYInput = document.getElementById("shadowYInput");
-
-    const downloadBtn = document.getElementById("downloadBtn");
-
-    // App state: 'text' | 'patchColor' | 'patchBlur' | 'eraser'
-    let currentMode = "text";
-    let pickingColor = false;
-    let bgImage = null;
-    let texts = [];
-    let selectedIndex = -1;
-    let isPointerDown = false;
-    let isDraggingText = false;
-    let offsetX = 0;
-    let offsetY = 0;
+    deleteTextBtn.addEventListener("click", () => {
+      if (selectedTextIndex >= 0 && texts[selectedTextIndex]) {
+        texts.splice(selectedTextIndex, 1);
+        selectedTextIndex = texts.length - 1;
+        loadSelectedTextIntoInputs();
+        render();
+      }
+    });
 
     brushSizeInput.addEventListener("input", () => {
       brushSizeVal.textContent = brushSizeInput.value + "px";
+    });
+
+    logoSizeInput.addEventListener("input", () => {
+      const w = parseInt(logoSizeInput.value, 10);
+      logoSizeVal.textContent = w + "px";
+      if (logoState.img) {
+        const ratio = logoState.img.height / logoState.img.width;
+        logoState.width = w;
+        logoState.height = Math.round(w * ratio);
+        render();
+      }
+    });
+
+    logoOpacityInput.addEventListener("input", () => {
+      logoState.opacity = parseInt(logoOpacityInput.value, 10) / 100;
+      render();
+    });
+
+    resetLogoPosBtn.addEventListener("click", () => {
+      logoState.x = 20;
+      logoState.y = 20;
+      render();
+    });
+
+    removeLogoBtn.addEventListener("click", () => {
+      logoState.img = null;
+      logoState.selected = false;
+      logoInput.value = "";
+      render();
     });
 
     function setMode(mode) {
       currentMode = mode;
       pickingColor = false;
       eyedropBtn.classList.remove("active-tool");
-      [modeTextBtn, modePatchColorBtn, modePatchBlurBtn, modeEraserBtn].forEach(b => b.classList.remove("active-tool"));
-      if (mode === "text") modeTextBtn.classList.add("active-tool");
+      [modeMoveBtn, modePatchColorBtn, modePatchBlurBtn, modeEraserBtn].forEach(b => b.classList.remove("active-tool"));
+      if (mode === "move") modeMoveBtn.classList.add("active-tool");
       if (mode === "patchColor") modePatchColorBtn.classList.add("active-tool");
       if (mode === "patchBlur") modePatchBlurBtn.classList.add("active-tool");
       if (mode === "eraser") modeEraserBtn.classList.add("active-tool");
-      canvas.style.cursor = mode === "text" ? "grab" : "crosshair";
+      canvas.style.cursor = mode === "move" ? "grab" : "crosshair";
       render();
     }
 
-    modeTextBtn.addEventListener("click", () => setMode("text"));
+    modeMoveBtn.addEventListener("click", () => setMode("move"));
     modePatchColorBtn.addEventListener("click", () => setMode("patchColor"));
     modePatchBlurBtn.addEventListener("click", () => setMode("patchBlur"));
     modeEraserBtn.addEventListener("click", () => setMode("eraser"));
@@ -275,7 +225,7 @@
       ctx.textAlign = "start";
     }
 
-    function render() {
+    function render(isExporting = false) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (bgImage) {
@@ -284,10 +234,28 @@
         drawPlaceholder();
       }
 
-      // Draw old-text patches above base photo, below new text layers
       ctx.drawImage(patchCanvas, 0, 0);
 
-      // Draw text layers
+      if (logoState.img) {
+        ctx.save();
+        ctx.globalAlpha = logoState.opacity;
+        ctx.shadowColor = "rgba(0,0,0,0.35)";
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+        ctx.drawImage(logoState.img, logoState.x, logoState.y, logoState.width, logoState.height);
+        ctx.restore();
+
+        if (!isExporting && logoState.selected && currentMode === "move") {
+          ctx.save();
+          ctx.strokeStyle = "#a855f7";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 4]);
+          ctx.strokeRect(logoState.x - 3, logoState.y - 3, logoState.width + 6, logoState.height + 6);
+          ctx.restore();
+        }
+      }
+
       texts.forEach((item, idx) => {
         ctx.save();
         ctx.font = `${item.fontSize}px ${item.fontFamily}`;
@@ -298,11 +266,6 @@
           ctx.shadowBlur = item.shadowBlur;
           ctx.shadowOffsetX = item.shadowX;
           ctx.shadowOffsetY = item.shadowY;
-        } else {
-          ctx.shadowColor = "transparent";
-          ctx.shadowBlur = 0;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 0;
         }
 
         if (item.outline) {
@@ -315,11 +278,10 @@
         ctx.fillText(item.text, item.x, item.y);
         ctx.restore();
 
-        // Selection box (rendered cleanly without shadow)
-        if (idx === selectedIndex && currentMode === "text") {
+        if (!isExporting && idx === selectedTextIndex && currentMode === "move") {
           ctx.save();
-          const metrics = ctx.measureText(item.text);
-          const w = metrics.width;
+          ctx.font = `${item.fontSize}px ${item.fontFamily}`;
+          const w = Math.max(40, ctx.measureText(item.text).width);
           const h = item.fontSize * 1.25;
           ctx.strokeStyle = "#38bdf8";
           ctx.lineWidth = 2;
@@ -328,7 +290,6 @@
         }
       });
     }
-
     imgInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -342,7 +303,6 @@
           canvas.width = Math.round(img.width * scale);
           canvas.height = Math.round(img.height * scale);
 
-          // Reset & resize patch layer to match photo resolution
           patchCanvas.width = canvas.width;
           patchCanvas.height = canvas.height;
           pCtx.clearRect(0, 0, patchCanvas.width, patchCanvas.height);
@@ -354,49 +314,28 @@
       reader.readAsDataURL(file);
     });
 
-    function buildTextStyle() {
-      return {
-        fontSize: parseInt(sizeInput.value, 10) || 36,
-        color: colorInput.value,
-        fontFamily: fontInput.value,
-        outline: outlineCheck.checked,
-        shadow: shadowCheck.checked,
-        shadowColor: shadowColorInput.value,
-        shadowBlur: parseInt(shadowBlurInput.value, 10) || 0,
-        shadowX: parseInt(shadowXInput.value, 10) || 0,
-        shadowY: parseInt(shadowYInput.value, 10) || 0
-      };
-    }
-
-    addTextBtn.addEventListener("click", () => {
-      const val = textInput.value.trim();
-      if (!val) return;
-      const style = buildTextStyle();
-
-      if (selectedIndex >= 0 && texts[selectedIndex]) {
-        texts[selectedIndex] = {
-          ...texts[selectedIndex],
-          text: val,
-          ...style
+    logoInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const w = parseInt(logoSizeInput.value, 10) || 110;
+          const ratio = img.height / img.width;
+          logoState.img = img;
+          logoState.x = 20;
+          logoState.y = 20;
+          logoState.width = w;
+          logoState.height = Math.round(w * ratio);
+          logoState.selected = true;
+          selectedTextIndex = -1;
+          loadSelectedTextIntoInputs();
+          setMode("move");
         };
-      } else {
-        texts.push({
-          text: val,
-          x: 40,
-          y: 40,
-          ...style
-        });
-        selectedIndex = texts.length - 1;
-      }
-      render();
-    });
-
-    deleteTextBtn.addEventListener("click", () => {
-      if (selectedIndex >= 0 && texts[selectedIndex]) {
-        texts.splice(selectedIndex, 1);
-        selectedIndex = texts.length - 1;
-        render();
-      }
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
     });
 
     function getCanvasCoords(clientX, clientY) {
@@ -424,7 +363,6 @@
         pCtx.fill();
         pCtx.restore();
       } else if (currentMode === "patchBlur") {
-        // Copy a soft blurred region from the current canvas
         const size = radius * 2;
         const sx = Math.max(0, x - radius);
         const sy = Math.max(0, y - radius);
@@ -462,37 +400,55 @@
         return;
       }
 
-      if (currentMode !== "text") {
+      if (currentMode !== "move") {
         applyPatchAt(pos.x, pos.y);
         return;
       }
 
-      selectedIndex = -1;
+      let hitTextIdx = -1;
       for (let i = texts.length - 1; i >= 0; i--) {
         const t = texts[i];
         ctx.font = `${t.fontSize}px ${t.fontFamily}`;
-        const w = ctx.measureText(t.text).width;
+        const w = Math.max(40, ctx.measureText(t.text).width);
         const h = t.fontSize * 1.25;
         if (pos.x >= t.x - 4 && pos.x <= t.x + w + 4 && pos.y >= t.y - 2 && pos.y <= t.y + h + 2) {
-          selectedIndex = i;
-          isDraggingText = true;
-          offsetX = pos.x - t.x;
-          offsetY = pos.y - t.y;
-
-          // Sync controls with selected text
-          textInput.value = t.text;
-          sizeInput.value = t.fontSize;
-          colorInput.value = t.color;
-          fontInput.value = t.fontFamily;
-          outlineCheck.checked = Boolean(t.outline);
-          shadowCheck.checked = Boolean(t.shadow);
-          shadowColorInput.value = t.shadowColor || "#000000";
-          shadowBlurInput.value = t.shadowBlur ?? 10;
-          shadowXInput.value = t.shadowX ?? 3;
-          shadowYInput.value = t.shadowY ?? 4;
+          hitTextIdx = i;
           break;
         }
       }
+
+      if (hitTextIdx >= 0) {
+        selectedTextIndex = hitTextIdx;
+        logoState.selected = false;
+        dragTarget = "text";
+        offsetX = pos.x - texts[hitTextIdx].x;
+        offsetY = pos.y - texts[hitTextIdx].y;
+        loadSelectedTextIntoInputs();
+        render();
+        return;
+      }
+
+      if (
+        logoState.img &&
+        pos.x >= logoState.x &&
+        pos.x <= logoState.x + logoState.width &&
+        pos.y >= logoState.y &&
+        pos.y <= logoState.y + logoState.height
+      ) {
+        selectedTextIndex = -1;
+        logoState.selected = true;
+        dragTarget = "logo";
+        offsetX = pos.x - logoState.x;
+        offsetY = pos.y - logoState.y;
+        loadSelectedTextIntoInputs();
+        render();
+        return;
+      }
+
+      selectedTextIndex = -1;
+      logoState.selected = false;
+      dragTarget = null;
+      loadSelectedTextIntoInputs();
       render();
     }
 
@@ -500,21 +456,25 @@
       if (!isPointerDown) return;
       const pos = getCanvasCoords(clientX, clientY);
 
-      if (currentMode !== "text") {
+      if (currentMode !== "move") {
         applyPatchAt(pos.x, pos.y);
         return;
       }
 
-      if (isDraggingText && selectedIndex >= 0) {
-        texts[selectedIndex].x = pos.x - offsetX;
-        texts[selectedIndex].y = pos.y - offsetY;
+      if (dragTarget === "text" && selectedTextIndex >= 0) {
+        texts[selectedTextIndex].x = pos.x - offsetX;
+        texts[selectedTextIndex].y = pos.y - offsetY;
+        render();
+      } else if (dragTarget === "logo" && logoState.img) {
+        logoState.x = pos.x - offsetX;
+        logoState.y = pos.y - offsetY;
         render();
       }
     }
 
     function onPointerUp() {
       isPointerDown = false;
-      isDraggingText = false;
+      dragTarget = null;
     }
 
     canvas.addEventListener("mousedown", (e) => onPointerDown(e.clientX, e.clientY));
@@ -537,20 +497,15 @@
     window.addEventListener("touchend", onPointerUp);
 
     downloadBtn.addEventListener("click", () => {
-      const prevMode = currentMode;
-      currentMode = "patchColor"; // hides selection border during export
-      render();
-
+      render(true);
       const link = document.createElement("a");
       link.download = "edited-photo.png";
       link.href = canvas.toDataURL("image/png");
       link.click();
-
-      currentMode = prevMode;
-      render();
+      render(false);
     });
 
     drawPlaceholder();
   </script>
 </body>
-</html>
+        </html>
